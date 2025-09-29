@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-``
 import 'dotenv/config';
 
 const connectDB = async (): Promise<void>=> {
@@ -12,10 +11,10 @@ const connectDB = async (): Promise<void>=> {
         console.log(`MongoDB connected: ${mongoose.connection.host}`);
                 
     } catch (error) {
-       console.log(`Error: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message: "Unknown error";
+       console.log(`Database connection failed : ${errorMessage}`);
          process.exit(1);
        
-        
     }
 
 }
