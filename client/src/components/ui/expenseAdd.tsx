@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "./button";
+import { addExpense } from "@/lib/api";
 
 
 
@@ -11,10 +12,15 @@ const [description,setDescription] = useState("");
 const [category,setCategory] = useState("General");
 const [date,setDate] = useState(new Date().toISOString().slice(0,10));
 const [error,setError] = useState<string | null>(null);
-    const onSubmit = (e:React.FormEvent) =>{
+const [success,setSuccess] = useState<string | null>(null);
+const [submitting,setSubmitting] = useState(false);
+const [serverError,setServerError] = useState<string | null>(null);
+    const onSubmit = async (e:React.FormEvent) =>{
         e.preventDefault();
         console.log("submitted form");
         setError(null); 
+        setServerError(null);
+        setSuccess(null);
     
   const amountNum = Number(amount);
     if (Number.isNaN(amountNum) || amountNum <= 0) {
@@ -46,8 +52,24 @@ const [error,setError] = useState<string | null>(null);
         category:cat,
         date:dateISO
     }
-    console.log("submitting",payload);
+
+    try {
+      setSubmitting(true);
+      const res = await addExpense(payload);
+      console.log("Api added:", res);
+      setAmount("");
+      setDescription("");
+      setSuccess("Expense added successfully");
+     
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Something went wrong";
+      setServerError(msg);
+      setSuccess(null);
+
+}finally{
+  setSubmitting(false);
 }
+    }
     return(
        <form className="grid gap-3" onSubmit={onSubmit}>
          <div className="grid gap-1">
@@ -103,8 +125,12 @@ const [error,setError] = useState<string | null>(null);
         />
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+      {success && <p className="text-sm text-green-600">{success}</p>}
         <div className="flex gap-2">
-        <Button type="submit">Add Expense</Button>
+        <Button type="submit" disabled={submitting}>
+        {submitting ? "saving..." : "Add expenses"}
+        </Button>
         </div>
        </form>
 
