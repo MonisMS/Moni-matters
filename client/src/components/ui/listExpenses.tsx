@@ -22,9 +22,29 @@ export default function ExpenseList({ refreshKey = 0 }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-   const [editingId, setEditingId] = useState<string | null>(null);
-  const [descDraft, setDescDraft] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+
+const [draft, setDraft] = useState({
+    amount: "",      // string in inputs
+    currency: "",
+    description: "",
+    category: "",
+    date: "",        // yyyy-mm-dd
+  });
+ function toYyyyMmDd(iso: string) {
+    const d = new Date(iso);
+    const yyyy = d.getUTCFullYear();
+    const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(d.getUTCDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+   function toISODateUTC(yyyyMmDd: string) {
+    const [y, m, d] = yyyyMmDd.split("-").map(Number);
+    return new Date(Date.UTC(y!, (m! - 1), d!)).toISOString();
+  }
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -57,35 +77,66 @@ const handleDelete = async (id:string) =>{
       setDeletingId(null);
     }
   }
-const startEdit = (id:string, currentDesc:string) =>{
-  setEditingId(id);
-  setDescDraft(currentDesc || "");
-}
+const startEdit = (row: Expense) => {
+    setEditingId(row._id);
+    setError(null);
+    setDraft({
+      amount: String(row.amount.amount ?? 0),
+      currency: row.amount.currency ?? "INR",
+      description: row.description ?? "",
+      category: row.category ?? "General",
+      date: toYyyyMmDd(row.date),
+    });
+  };
 
-const cancelEdit = () => {
+ const cancelEdit = () => {
     setEditingId(null);
-    setDescDraft("");
+    setDraft({ amount: "", currency: "", description: "", category: "", date: "" });
   };
     const saveEdit = async (id: string) => {
-    const nextDesc = descDraft.trim(); // simple sanitize
+    const amountNum = Number(draft.amount);
+    if (Number.isNaN(amountNum) || amountNum <= 0) {
+      setError("Amount must be a positive number.");
+      return;
+    }
+    if (!draft.currency.trim()) {
+      setError("Currency is required.");
+      return;
+    }
+    if (!draft.category.trim()) {
+      setError("Category is required.");
+      return;
+    }
+    if (!draft.date) {
+      setError("Date is required.");
+      return;
+    }
+     const payload = {
+      // Backend expects amount and currency separately; it will nest them
+      amount: amountNum,
+      currency: draft.currency.trim().toUpperCase(),
+      description: draft.description.trim(),
+      category: draft.category.trim(),
+      date: toISODateUTC(draft.date),
+    };
+
     setSavingId(id);
     setError(null);
-    try {
-      const res = await updateExpense(id, { description: nextDesc || "" });
-      // replace just this item locally with normalized server result
-      const updated = normalizeExpense(res.updatedExpense as any);
-      setExpenses(xs => xs.map(x => (x._id === id ? updated : x)));
+     try {
+      const res = await updateExpense(id, payload);
+      const updated = normalizeExpense(res.updatedExpense);
+      setExpenses((xs) => xs.map((x) => (x._id === id ? updated : x)));
       setEditingId(null);
-      setDescDraft("");
+      setDraft({ amount: "", currency: "", description: "", category: "", date: "" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to update");
     } finally {
       setSavingId(null);
     }
   };
+
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
   if (error) return <p className="text-sm text-red-600">Error: {error}</p>;
-
   return (
     <div className="space-y-2">
       <p className="text-sm text-muted-foreground">Total: {expenses.length}</p>
@@ -96,12 +147,43 @@ const cancelEdit = () => {
             <li key={e._id} className="flex items-center justify-between gap-3 border rounded-md px-3 py-2">
               <div className="flex-1">
                 {isEditing ? (
-                  <input
-                    className="h-9 w-full rounded-md border px-3"
-                    value={descDraft}
-                    onChange={(ev) => setDescDraft(ev.target.value)}
-                    placeholder="Description"
-                  />
+                  <div className="grid gap-2">
+                    <input
+                      className="h-9 w-full rounded-md border px-3"
+                      value={draft.description}
+                      onChange={(ev) => setDraft((d) => ({ ...d, description: ev.target.value }))}
+                      placeholder="Description"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        className="h-9 rounded-md border px-3"
+                        type="number"
+                        value={draft.amount}
+                        onChange={(ev) => setDraft((d) => ({ ...d, amount: ev.target.value }))}
+                        placeholder="Amount"
+                      />
+                      <input
+                        className="h-9 rounded-md border px-3"
+                        value={draft.currency}
+                        onChange={(ev) => setDraft((d) => ({ ...d, currency: ev.target.value }))}
+                        placeholder="Currency (e.g., INR)"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        className="h-9 rounded-md border px-3"
+                        value={draft.category}
+                        onChange={(ev) => setDraft((d) => ({ ...d, category: ev.target.value }))}
+                        placeholder="Category"
+                      />
+                      <input
+                        className="h-9 rounded-md border px-3"
+                        type="date"
+                        value={draft.date}
+                        onChange={(ev) => setDraft((d) => ({ ...d, date: ev.target.value }))}
+                      />
+                    </div>
+                  </div>
                 ) : (
                   <span className="text-sm">
                     {e.description || "No description"} — {e.category || "General"}
@@ -129,7 +211,7 @@ const cancelEdit = () => {
                   </>
                 ) : (
                   <>
-                    <Button size="sm" variant="outline" onClick={() => startEdit(e._id, e.description || "")}>
+                    <Button size="sm" variant="outline" onClick={() => startEdit(e)}>
                       Edit
                     </Button>
                     <Button
