@@ -26,3 +26,8 @@ export function addExpense(payload: AddExpensePayload) {
 export function listExpenses() {
 return http<GetExpensesResponse>(`${BASE_URL}/expenses/get`);
 }
+export function deletedExpense (id:string) {
+  return http<{message:string}>(`${BASE_URL}/expenses/${id}`,{
+    method:"DELETE",
+  })
+}
