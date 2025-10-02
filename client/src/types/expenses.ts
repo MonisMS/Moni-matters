@@ -32,3 +32,15 @@ export type GetExpensesResponse ={
      message: string;
   expenses: Expense[];
 }
+
+export type UpdateExpensePayload = Partial<{
+  amount: number;
+  currency: string;
+  description: string;
+  category: string;
+  date: string; // ISO
+}>;
+export type UpdateExpenseResponse = {
+  message: string;
+  updatedExpense: Expense;
+};

@@ -1,4 +1,4 @@
-import type { AddExpensePayload, AddExpenseResponse, GetExpensesResponse } from "@/types/expenses";
+import type { AddExpensePayload, AddExpenseResponse, GetExpensesResponse, UpdateExpensePayload, UpdateExpenseResponse } from "@/types/expenses";
 
 const BASE_URL= import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 async function http<T>(url: string, init?: RequestInit): Promise<T> {
@@ -30,4 +30,10 @@ export function deletedExpense (id:string) {
   return http<{message:string}>(`${BASE_URL}/expenses/${id}`,{
     method:"DELETE",
   })
+}
+export function updateExpense(id: string, payload: UpdateExpensePayload) {
+  return http<UpdateExpenseResponse>(`${BASE_URL}/expenses/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 }
