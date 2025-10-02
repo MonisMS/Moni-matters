@@ -1,4 +1,4 @@
-import type { AddExpensePayload, AddExpenseResponse } from "@/types/expenses";
+import type { AddExpensePayload, AddExpenseResponse, GetExpensesResponse } from "@/types/expenses";
 
 const BASE_URL= import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 async function http<T>(url: string, init?: RequestInit): Promise<T> {
@@ -20,4 +20,9 @@ export function addExpense(payload: AddExpensePayload) {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+
+export function listExpenses() {
+return http<GetExpensesResponse>(`${BASE_URL}/expenses/get`);
 }

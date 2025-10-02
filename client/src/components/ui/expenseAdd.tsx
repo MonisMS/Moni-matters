@@ -1,10 +1,12 @@
-import { useState } from "react";
+import {  useState } from "react";
 import { Button } from "./button";
 import { addExpense } from "@/lib/api";
 
 
-
-export default function AddExpenseForm(){
+type Props = {
+  onadded?: () => void;
+}
+export default function AddExpenseForm({onadded}:Props){
 
 const [amount,setAmount] = useState("");
 const [currency,setCurrency] = useState("INR");
@@ -15,6 +17,10 @@ const [error,setError] = useState<string | null>(null);
 const [success,setSuccess] = useState<string | null>(null);
 const [submitting,setSubmitting] = useState(false);
 const [serverError,setServerError] = useState<string | null>(null);
+
+
+
+
     const onSubmit = async (e:React.FormEvent) =>{
         e.preventDefault();
         console.log("submitted form");
@@ -60,6 +66,7 @@ const [serverError,setServerError] = useState<string | null>(null);
       setAmount("");
       setDescription("");
       setSuccess("Expense added successfully");
+      onadded?.();
      
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Something went wrong";

@@ -18,3 +18,17 @@ export type AddExpenseResponse = {
     updatedAt: string;
   };
 };
+export type Expense = {
+_id: string;
+  description?: string;
+  amount: { amount: number; currency: string };
+  category?: string;
+  date: string;        // ISO string from server
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type GetExpensesResponse ={
+     message: string;
+  expenses: Expense[];
+}
